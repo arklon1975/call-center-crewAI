@@ -30,3 +30,7 @@ run = ["sh", "-c", "python -m pip install fastapi uvicorn crewai crewai-tools &&
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 8000
+externalPort = 8000

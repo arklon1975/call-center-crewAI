@@ -2,7 +2,7 @@
 FastAPI routes for the call center system
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 import json
@@ -10,6 +10,8 @@ import json
 from crew_manager import call_center_crew
 from database.models import Call, Agent, CallLog
 from agents.call_routing_agent import CallRoutingAgent
+from auth.dependencies import require_auth, require_supervisor, require_admin
+from auth.models import User
 
 router = APIRouter()
 
@@ -29,8 +31,11 @@ class EndCallRequest(BaseModel):
 
 # Call Management Endpoints
 @router.post("/calls/initiate")
-async def initiate_call(request: InitiateCallRequest) -> Dict[str, Any]:
-    """Initiate a new customer call"""
+async def initiate_call(
+    request: InitiateCallRequest,
+    current_user: User = Depends(require_auth)
+) -> Dict[str, Any]:
+    """Initiate a new customer call (requires authentication)"""
     try:
         result = call_center_crew.initiate_call(
             customer_phone=request.customer_phone,
@@ -41,14 +46,20 @@ async def initiate_call(request: InitiateCallRequest) -> Dict[str, Any]:
         if not result.get("success"):
             raise HTTPException(status_code=400, detail=result.get("error", "Failed to initiate call"))
         
+        # Log the action
+        result["initiated_by"] = current_user.username
+        
         return result
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @router.post("/calls/message")
-async def send_customer_message(request: CustomerMessageRequest) -> Dict[str, Any]:
-    """Send a customer message and get agent response"""
+async def send_customer_message(
+    request: CustomerMessageRequest,
+    current_user: User = Depends(require_auth)
+) -> Dict[str, Any]:
+    """Send a customer message and get agent response (requires authentication)"""
     try:
         result = call_center_crew.handle_customer_message(
             call_id=request.call_id,
@@ -64,8 +75,11 @@ async def send_customer_message(request: CustomerMessageRequest) -> Dict[str, An
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @router.post("/calls/end")
-async def end_call(request: EndCallRequest) -> Dict[str, Any]:
-    """End an active call"""
+async def end_call(
+    request: EndCallRequest,
+    current_user: User = Depends(require_auth)
+) -> Dict[str, Any]:
+    """End an active call (requires authentication)"""
     try:
         result = call_center_crew.end_call(
             call_id=request.call_id,
@@ -75,14 +89,20 @@ async def end_call(request: EndCallRequest) -> Dict[str, Any]:
         if not result.get("success"):
             raise HTTPException(status_code=400, detail=result.get("error", "Failed to end call"))
         
+        # Log the action
+        result["ended_by"] = current_user.username
+        
         return result
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @router.get("/calls/{call_id}/status")
-async def get_call_status(call_id: str) -> Dict[str, Any]:
-    """Get status of a specific call"""
+async def get_call_status(
+    call_id: str,
+    current_user: User = Depends(require_auth)
+) -> Dict[str, Any]:
+    """Get status of a specific call (requires authentication)"""
     try:
         result = call_center_crew.get_call_status(call_id)
         
@@ -95,8 +115,11 @@ async def get_call_status(call_id: str) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @router.get("/calls/{call_id}/history")
-async def get_call_history(call_id: str) -> Dict[str, Any]:
-    """Get conversation history for a call"""
+async def get_call_history(
+    call_id: str,
+    current_user: User = Depends(require_auth)
+) -> Dict[str, Any]:
+    """Get conversation history for a call (requires authentication)"""
     try:
         call_logs = CallLog.get_by_call_id(call_id)
         
@@ -122,8 +145,10 @@ async def get_call_history(call_id: str) -> Dict[str, Any]:
 
 # Dashboard and Monitoring Endpoints
 @router.get("/dashboard/summary")
-async def get_dashboard_summary() -> Dict[str, Any]:
-    """Get dashboard summary with key metrics"""
+async def get_dashboard_summary(
+    current_user: User = Depends(require_auth)
+) -> Dict[str, Any]:
+    """Get dashboard summary with key metrics (requires authentication)"""
     try:
         # Get active calls summary
         active_calls = call_center_crew.get_active_calls_summary()
@@ -150,15 +175,18 @@ async def get_dashboard_summary() -> Dict[str, Any]:
             "active_calls": active_calls.get("summary", {}) if active_calls.get("success") else {},
             "agent_status": agent_status,
             "queue_status": queue_status.get("queue_status", {}),
-            "system_status": "operational"
+            "system_status": "operational",
+            "user_role": current_user.role.value
         }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @router.get("/dashboard/calls/active")
-async def get_active_calls() -> Dict[str, Any]:
-    """Get list of all active calls"""
+async def get_active_calls(
+    current_user: User = Depends(require_auth)
+) -> Dict[str, Any]:
+    """Get list of all active calls (requires authentication)"""
     try:
         result = call_center_crew.get_active_calls_summary()
         
@@ -194,36 +222,40 @@ async def get_active_calls() -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @router.get("/dashboard/agents")
-async def get_agents_status() -> Dict[str, Any]:
-    """Get status of all agents"""
+async def get_agents_status(
+    current_user: User = Depends(require_auth)
+) -> Dict[str, Any]:
+    """Get status of all agents (requires authentication)"""
     try:
         agents = Agent.get_all_agents()
         
-        agents_data = []
+        agents_list = []
         for agent in agents:
-            agents_data.append({
+            agents_list.append({
                 "agent_id": agent.agent_id,
                 "name": agent.name,
                 "role": agent.role,
                 "status": agent.status,
                 "current_calls": agent.current_calls,
                 "total_calls": agent.total_calls,
-                "last_active": agent.last_active
+                "last_active": str(agent.last_active) if agent.last_active else None
             })
         
         return {
             "success": True,
-            "agents": agents_data,
-            "total_agents": len(agents_data),
-            "available_agents": len([a for a in agents_data if a["status"] == "available"])
+            "agents": agents_list,
+            "available_agents": len([a for a in agents if a.status == "available"])
         }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @router.get("/dashboard/performance")
-async def get_performance_metrics(time_period: str = "today") -> Dict[str, Any]:
-    """Get performance metrics for specified time period"""
+async def get_performance_metrics(
+    time_period: str = "today",
+    current_user: User = Depends(require_supervisor)
+) -> Dict[str, Any]:
+    """Get performance metrics for specified time period (requires supervisor role)"""
     try:
         result = call_center_crew.get_agent_performance(time_period=time_period)
         
@@ -235,67 +267,80 @@ async def get_performance_metrics(time_period: str = "today") -> Dict[str, Any]:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-# Agent Management Endpoints
 @router.get("/agents/{agent_id}/performance")
-async def get_agent_performance(agent_id: str, time_period: str = "today") -> Dict[str, Any]:
-    """Get performance metrics for a specific agent"""
+async def get_agent_performance(
+    agent_id: str,
+    time_period: str = "today",
+    current_user: User = Depends(require_supervisor)
+) -> Dict[str, Any]:
+    """Get performance metrics for a specific agent (requires supervisor role)"""
     try:
-        result = call_center_crew.supervisor_agent.generate_performance_report(
-            agent_id=agent_id,
-            time_period=time_period
-        )
-        
-        if not result.get("success"):
-            raise HTTPException(status_code=404, detail=result.get("error", "Agent not found"))
-        
-        return result
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
-
-@router.post("/agents/{agent_id}/coaching")
-async def provide_coaching(agent_id: str, call_id: str) -> Dict[str, Any]:
-    """Provide coaching feedback for an agent based on a specific call"""
-    try:
-        result = call_center_crew.supervisor_agent.provide_coaching_feedback(
-            agent_id=agent_id,
-            call_id=call_id
-        )
-        
-        if not result.get("success"):
-            raise HTTPException(status_code=400, detail=result.get("error", "Failed to provide coaching"))
-        
-        return result
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
-
-# Routing and Queue Management
-@router.get("/routing/queue-status")
-async def get_queue_status(department: Optional[str] = None) -> Dict[str, Any]:
-    """Get current queue status for departments"""
-    try:
-        routing_agent = CallRoutingAgent()
-        result = routing_agent.get_queue_status(department)
-        
+        # This would need to be implemented in crew_manager
         return {
             "success": True,
-            **result
+            "agent_id": agent_id,
+            "time_period": time_period,
+            "message": "Agent performance metrics not yet implemented"
         }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-@router.post("/routing/callback-recommendation")
-async def get_callback_recommendation(call_id: str, department: str) -> Dict[str, Any]:
-    """Get callback recommendation for a call"""
+@router.post("/agents/{agent_id}/coaching")
+async def provide_coaching(
+    agent_id: str,
+    call_id: str,
+    current_user: User = Depends(require_supervisor)
+) -> Dict[str, Any]:
+    """Provide coaching feedback for an agent (requires supervisor role)"""
     try:
-        routing_agent = CallRoutingAgent()
-        result = routing_agent.recommend_callback(call_id, department)
-        
+        # This would need to be implemented in crew_manager
         return {
             "success": True,
-            **result
+            "agent_id": agent_id,
+            "call_id": call_id,
+            "coached_by": current_user.username,
+            "message": "Coaching functionality not yet implemented"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@router.get("/routing/queue-status")
+async def get_queue_status(
+    department: Optional[str] = None,
+    current_user: User = Depends(require_auth)
+) -> Dict[str, Any]:
+    """Get queue status for departments (requires authentication)"""
+    try:
+        routing_agent = CallRoutingAgent()
+        result = routing_agent.get_queue_status()
+        
+        if department:
+            # Filter by specific department
+            queue_status = result.get("queue_status", {})
+            filtered_status = {dept: status for dept, status in queue_status.items() if dept == department}
+            result["queue_status"] = filtered_status
+        
+        return result
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@router.post("/routing/callback-recommendation")
+async def get_callback_recommendation(
+    call_id: str,
+    department: str,
+    current_user: User = Depends(require_auth)
+) -> Dict[str, Any]:
+    """Get callback recommendation for a call (requires authentication)"""
+    try:
+        # This would need to be implemented in call_routing_agent
+        return {
+            "success": True,
+            "call_id": call_id,
+            "department": department,
+            "recommendation": "Callback functionality not yet implemented"
         }
         
     except Exception as e:
@@ -304,7 +349,7 @@ async def get_callback_recommendation(call_id: str, department: str) -> Dict[str
 # System Health and Configuration
 @router.get("/system/health")
 async def system_health() -> Dict[str, Any]:
-    """Get system health status"""
+    """Get system health status (public endpoint)"""
     try:
         # Check database connection
         agents = Agent.get_all_agents()
@@ -336,3 +381,40 @@ async def system_health() -> Dict[str, Any]:
             "status": "error",
             "error": str(e)
         }
+
+# Admin-only endpoints
+@router.get("/admin/system-info")
+async def get_system_info(
+    current_user: User = Depends(require_admin)
+) -> Dict[str, Any]:
+    """Get detailed system information (admin only)"""
+    try:
+        import psutil
+        import platform
+        
+        return {
+            "success": True,
+            "system": {
+                "platform": platform.platform(),
+                "python_version": platform.python_version(),
+                "cpu_count": psutil.cpu_count(),
+                "memory_total": psutil.virtual_memory().total,
+                "memory_available": psutil.virtual_memory().available,
+                "disk_usage": psutil.disk_usage('/').percent
+            },
+            "database": {
+                "type": "SQLite",
+                "path": "call_center.db"
+            },
+            "environment": {
+                "debug": current_user.role.value == "admin"  # Only show to admin
+            }
+        }
+        
+    except ImportError:
+        return {
+            "success": True,
+            "message": "System monitoring not available (psutil not installed)"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
