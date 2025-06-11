@@ -4,7 +4,6 @@ Call Routing Agent - Routes calls to appropriate departments and agents
 
 import json
 from crewai import Agent
-from crewai_tools import BaseTool
 from openai import OpenAI
 from typing import Dict, Any, List
 

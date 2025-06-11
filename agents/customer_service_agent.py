@@ -4,8 +4,7 @@ Customer Service Agent - Handles customer inquiries and provides support
 
 import json
 import os
-from crewai import Agent, Task, Tool
-from crewai_tools import BaseTool
+from crewai import Agent, Task
 from openai import OpenAI
 from typing import Dict, Any, Optional
 
@@ -20,7 +19,6 @@ class CustomerServiceAgent:
         self.openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
         self.agent_config = config.AGENT_CONFIGS["customer_service"]
         self.agent = self._create_agent()
-        self.tools = self._create_tools()
     
     def _create_agent(self) -> Agent:
         """Create the CrewAI agent"""
@@ -29,51 +27,8 @@ class CustomerServiceAgent:
             goal=self.agent_config["goal"],
             backstory=self.agent_config["backstory"],
             verbose=True,
-            allow_delegation=False,
-            tools=[]  # Tools will be added after creation
+            allow_delegation=False
         )
-    
-    def _create_tools(self) -> list:
-        """Create tools for the agent"""
-        
-        class KnowledgeBaseTool(BaseTool):
-            name: str = "knowledge_base_search"
-            description: str = "Search the knowledge base for relevant information and standard responses"
-            
-            def _run(self, query: str) -> str:
-                # Search for relevant FAQ responses
-                for key, response in knowledge_base.faq.items():
-                    if any(word in query.lower() for word in key.split('_')):
-                        return f"Standard response: {response}"
-                
-                return "No specific knowledge base entry found for this query."
-        
-        class EscalationCheckTool(BaseTool):
-            name: str = "check_escalation"
-            description: str = "Check if a situation requires escalation to supervisor"
-            
-            def _run(self, situation: str, call_duration: str = "0") -> str:
-                duration = int(call_duration) if call_duration.isdigit() else 0
-                escalation_info = knowledge_base.should_escalate(situation, duration)
-                return json.dumps(escalation_info)
-        
-        class CallLogTool(BaseTool):
-            name: str = "log_interaction"
-            description: str = "Log customer interaction for record keeping"
-            
-            def _run(self, call_id: str, interaction: str) -> str:
-                try:
-                    CallLog.create({
-                        "call_id": call_id,
-                        "agent_id": "cs_agent",
-                        "message_type": "agent",
-                        "content": interaction
-                    })
-                    return "Interaction logged successfully"
-                except Exception as e:
-                    return f"Failed to log interaction: {str(e)}"
-        
-        return [KnowledgeBaseTool(), EscalationCheckTool(), CallLogTool()]
     
     def handle_customer_inquiry(self, call_id: str, customer_message: str, context: Dict = None) -> Dict[str, Any]:
         """Handle a customer inquiry and generate appropriate response"""

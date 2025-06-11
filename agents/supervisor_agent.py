@@ -4,7 +4,6 @@ Supervisor Agent - Monitors call quality and handles escalations
 
 import json
 from crewai import Agent
-from crewai_tools import BaseTool
 from openai import OpenAI
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
