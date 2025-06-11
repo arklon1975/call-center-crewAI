@@ -30,7 +30,7 @@ class CustomerServiceAgent:
             allow_delegation=False
         )
     
-    def handle_customer_inquiry(self, call_id: str, customer_message: str, context: Dict = None) -> Dict[str, Any]:
+    def handle_customer_inquiry(self, call_id: str, customer_message: str, context: Optional[Dict] = None) -> Dict[str, Any]:
         """Handle a customer inquiry and generate appropriate response"""
         
         # Log customer message
