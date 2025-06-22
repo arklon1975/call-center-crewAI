@@ -7,6 +7,7 @@ from typing import Dict, Any, List
 from fastapi import APIRouter, HTTPException, status, Depends, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
+from fastapi.responses import JSONResponse
 
 from .auth_utils import (
     authenticate_user, create_access_token, create_refresh_token,
@@ -157,7 +158,8 @@ async def login(
         user_agent = get_user_agent(request)
         create_user_session(user, access_token, refresh_token, ip_address, user_agent)
         
-        return TokenResponse(
+        # Create response
+        response_data = TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
             token_type="bearer",
@@ -175,6 +177,31 @@ async def login(
             )
         )
         
+        # Create response with cookie
+        response = JSONResponse(content=response_data.dict())
+        
+        # Set access token as httpOnly cookie
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            max_age=1800,  # 30 minutes
+            httponly=True,
+            secure=False,  # Set to True in production with HTTPS
+            samesite="lax"
+        )
+        
+        # Set refresh token as httpOnly cookie
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            max_age=7 * 24 * 3600,  # 7 days
+            httponly=True,
+            secure=False,  # Set to True in production with HTTPS
+            samesite="lax"
+        )
+        
+        return response
+        
     except HTTPException:
         raise
     except Exception as e:
@@ -184,21 +211,50 @@ async def login(
         )
 
 @router.post("/refresh", response_model=Dict[str, Any])
-async def refresh_token(token_request: RefreshTokenRequest):
+async def refresh_token(request: Request, token_request: RefreshTokenRequest = None):
     """Refresh access token"""
     try:
-        tokens = refresh_access_token(token_request.refresh_token)
+        # Get refresh token from request body or cookie
+        refresh_token_value = None
+        if token_request and token_request.refresh_token:
+            refresh_token_value = token_request.refresh_token
+        else:
+            refresh_token_value = request.cookies.get("refresh_token")
+        
+        if not refresh_token_value:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token not provided"
+            )
+        
+        tokens = refresh_access_token(refresh_token_value)
         if not tokens:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid refresh token"
             )
         
-        return {
+        # Create response
+        response_data = {
             "success": True,
             **tokens,
             "expires_in": 1800
         }
+        
+        # Create response with new cookie
+        response = JSONResponse(content=response_data)
+        
+        # Set new access token as httpOnly cookie
+        response.set_cookie(
+            key="access_token",
+            value=tokens["access_token"],
+            max_age=1800,  # 30 minutes
+            httponly=True,
+            secure=False,  # Set to True in production with HTTPS
+            samesite="lax"
+        )
+        
+        return response
         
     except HTTPException:
         raise
@@ -209,16 +265,38 @@ async def refresh_token(token_request: RefreshTokenRequest):
         )
 
 @router.post("/logout")
-async def logout(current_user: User = Depends(require_auth)):
+async def logout(request: Request, current_user: User = Depends(require_auth)):
     """User logout"""
     try:
         # Invalidate all user sessions
         invalidate_user_sessions(current_user.id)
         
-        return {
+        # Create response
+        response_data = {
             "success": True,
             "message": "Logged out successfully"
         }
+        
+        # Create response with cookie clearing
+        response = JSONResponse(content=response_data)
+        
+        # Clear access token cookie
+        response.delete_cookie(
+            key="access_token",
+            httponly=True,
+            secure=False,  # Set to True in production with HTTPS
+            samesite="lax"
+        )
+        
+        # Clear refresh token cookie
+        response.delete_cookie(
+            key="refresh_token",
+            httponly=True,
+            secure=False,  # Set to True in production with HTTPS
+            samesite="lax"
+        )
+        
+        return response
         
     except Exception as e:
         raise HTTPException(

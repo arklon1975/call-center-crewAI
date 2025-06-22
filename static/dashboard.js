@@ -63,7 +63,9 @@ class CallCenterDashboard {
 
     async loadDashboardSummary() {
         try {
-            const response = await fetch('/api/dashboard/summary');
+            const response = await fetch('/api/dashboard/summary', {
+                credentials: 'include'
+            });
             const data = await response.json();
 
             if (data.success) {
@@ -83,7 +85,9 @@ class CallCenterDashboard {
 
     async loadActiveCalls() {
         try {
-            const response = await fetch('/api/dashboard/calls/active');
+            const response = await fetch('/api/dashboard/calls/active', {
+                credentials: 'include'
+            });
             const data = await response.json();
 
             if (data.success) {
@@ -104,7 +108,9 @@ class CallCenterDashboard {
 
     async loadAgentStatus() {
         try {
-            const response = await fetch('/api/dashboard/agents');
+            const response = await fetch('/api/dashboard/agents', {
+                credentials: 'include'
+            });
             const data = await response.json();
 
             if (data.success) {
@@ -121,7 +127,9 @@ class CallCenterDashboard {
 
     async loadDepartmentQueues() {
         try {
-            const response = await fetch('/api/routing/queue-status');
+            const response = await fetch('/api/routing/queue-status', {
+                credentials: 'include'
+            });
             const data = await response.json();
 
             if (data.success && data.queue_status) {
@@ -137,7 +145,9 @@ class CallCenterDashboard {
 
     async loadPerformanceMetrics(period = 'today') {
         try {
-            const response = await fetch(`/api/dashboard/performance?time_period=${period}`);
+            const response = await fetch(`/api/dashboard/performance?time_period=${period}`, {
+                credentials: 'include'
+            });
             const data = await response.json();
 
             if (data.success) {
@@ -349,8 +359,12 @@ class CallCenterDashboard {
     async showCallDetails(callId) {
         try {
             const [statusResponse, historyResponse] = await Promise.all([
-                fetch(`/api/calls/${callId}/status`),
-                fetch(`/api/calls/${callId}/history`)
+                fetch(`/api/calls/${callId}/status`, {
+                    credentials: 'include'
+                }),
+                fetch(`/api/calls/${callId}/history`, {
+                    credentials: 'include'
+                })
             ]);
 
             const statusData = await statusResponse.json();
