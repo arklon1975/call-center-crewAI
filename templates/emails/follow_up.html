@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seguimiento de Consulta - Call Center</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .email-container {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #ffc107;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #ffc107;
+            margin: 0;
+            font-size: 24px;
+        }
+        .customer-info {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+        .customer-info h3 {
+            color: #495057;
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .info-item {
+            margin-bottom: 10px;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #495057;
+        }
+        .follow-up-section {
+            background-color: #fff3cd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+        .follow-up-section h3 {
+            color: #856404;
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .follow-up-content {
+            background-color: #ffffff;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #ffc107;
+            color: #555;
+            line-height: 1.8;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .contact-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .contact-info a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .contact-info a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .email-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>📞 Seguimiento de tu Consulta</h1>
+            <p>Call Center System</p>
+        </div>
+
+        <div class="customer-info">
+            <h3>👤 Información del Cliente</h3>
+            <div class="info-item">
+                <span class="info-label">Nombre:</span> {{ customer_name }}
+            </div>
+            <div class="info-item">
+                <span class="info-label">ID de Llamada:</span> {{ call_id }}
+            </div>
+            <div class="info-item">
+                <span class="info-label">Agente:</span> {{ agent_name }}
+            </div>
+            <div class="info-item">
+                <span class="info-label">Fecha y Hora:</span> {{ conversation_date }}
+            </div>
+        </div>
+
+        <div class="follow-up-section">
+            <h3>📝 Información de Seguimiento</h3>
+            <div class="follow-up-content">
+                {{ follow_up_notes }}
+            </div>
+        </div>
+
+        <div class="contact-info">
+            <h4>📧 ¿Tienes alguna pregunta?</h4>
+            <p>Si necesitas más información o tienes alguna pregunta sobre el seguimiento, no dudes en contactarnos:</p>
+            <p>📧 Email: <a href="mailto:{{ support_email }}">{{ support_email }}</a></p>
+            <p>📞 Teléfono: +1 (555) 123-4567</p>
+        </div>
+
+        <div class="footer">
+            <p>Este es un email automático generado por el sistema de Call Center.</p>
+            <p>© {{ company_name }} - Todos los derechos reservados</p>
+        </div>
+    </div>
+</body>
+</html> 

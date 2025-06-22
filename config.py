@@ -85,4 +85,16 @@ class CallCenterConfig:
     CALL_TIMEOUT_MINUTES = 30
     QUALITY_SCORE_THRESHOLD = 3.5
 
+    # Email Configuration
+    MAIL_USERNAME = os.getenv("MAIL_USERNAME", "noreply@callcenter.com")
+    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "")
+    MAIL_FROM = os.getenv("MAIL_FROM", "noreply@callcenter.com")
+    MAIL_PORT = int(os.getenv("MAIL_PORT", "587"))
+    MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp.gmail.com")
+    MAIL_STARTTLS = os.getenv("MAIL_STARTTLS", "true").lower() == "true"
+    MAIL_SSL_TLS = os.getenv("MAIL_SSL_TLS", "false").lower() == "true"
+    
+    # Support Email
+    SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "soporte@callcenter.com")
+
 config = CallCenterConfig()

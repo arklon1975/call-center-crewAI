@@ -1,0 +1,41 @@
+# Call Center System - Requirements
+# Sistema de Call Center Multi-Agente con CrewAI
+
+# Framework Web
+fastapi>=0.115.12
+uvicorn>=0.34.3
+jinja2>=3.1.6
+
+# Agentes de IA
+crewai>=0.118.0
+crewai-tools>=0.0.1
+openai>=1.86.0
+
+# Autenticación y Seguridad
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.3.0
+python-multipart>=0.0.20
+
+# Base de Datos
+sqlalchemy>=2.0.0
+alembic>=1.13.0
+
+# Validación de Datos
+pydantic[email]>=2.0.0
+
+# Rate Limiting y Caché
+fastapi-limiter>=0.1.6
+redis>=5.0.0
+
+# Email
+fastapi-mail>=1.4.1
+aiosmtplib>=3.0.1
+
+# Utilidades
+python-dotenv>=1.0.0
+
+# Desarrollo (opcional)
+# pytest>=7.0.0
+# pytest-asyncio>=0.21.0
+# httpx>=0.24.0 

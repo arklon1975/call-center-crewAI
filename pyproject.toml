@@ -20,4 +20,6 @@ dependencies = [
     "fastapi-limiter>=0.1.6",
     "redis>=5.0.0",
     "bcrypt>=4.3.0",
+    "fastapi-mail>=1.4.1",
+    "aiosmtplib>=3.0.1",
 ]

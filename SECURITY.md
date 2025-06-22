@@ -1,122 +1,88 @@
-# 🔒 Guía de Seguridad - Call Center System
+# 🔒 Guía de Seguridad - Sistema de Call Center
 
-## Características de Seguridad Implementadas
+## ⚠️ Información de Seguridad
 
-### 1. **Autenticación y Autorización**
+Este documento contiene información importante sobre la seguridad del Sistema de Call Center Multi-Agente.
 
-#### ✅ **JWT (JSON Web Tokens)**
-- Tokens de acceso con expiración de 30 minutos
-- Tokens de refresh con expiración de 7 días
-- Algoritmo HS256 para firma de tokens
-- Validación automática de tokens en cada request
+## 🛡️ Características de Seguridad Implementadas
 
-#### ✅ **Sistema de Roles**
-- **Admin**: Acceso completo al sistema
-- **Supervisor**: Gestión de agentes y métricas
-- **Agent**: Operaciones básicas de call center
-- **Viewer**: Solo lectura
+### Autenticación y Autorización
 
-#### ✅ **Protección de Contraseñas**
-- Hash bcrypt con salt automático
-- Validación de fortaleza de contraseña
-- Política de contraseñas seguras:
-  - Mínimo 8 caracteres
-  - Al menos 1 mayúscula
-  - Al menos 1 minúscula
-  - Al menos 1 número
-  - Al menos 1 carácter especial
+- **JWT Tokens**: Tokens seguros con expiración configurable
+- **Cookies httpOnly**: Protección contra ataques XSS
+- **Refresh Tokens**: Renovación automática de sesiones
+- **Rate Limiting**: Prevención de ataques de fuerza bruta
+- **Roles de Usuario**: Control granular de permisos
+- **Contraseñas Hasheadas**: bcrypt con salt único
 
-### 2. **Protección contra Ataques**
+### Protección de Datos
 
-#### ✅ **Protección contra Fuerza Bruta**
-- Bloqueo de cuenta después de 5 intentos fallidos
-- Bloqueo temporal de 30 minutos
-- Registro de intentos de login fallidos
+- **Validación de Entrada**: Sanitización de todos los datos de entrada
+- **Headers de Seguridad**: Configuración de headers HTTP seguros
+- **CORS Configurado**: Control de orígenes permitidos
+- **SQL Injection Protection**: Uso de ORM con parámetros preparados
+- **XSS Protection**: Escape automático de contenido HTML
 
-#### ✅ **Gestión de Sesiones**
-- Seguimiento de sesiones activas
-- Invalidación de sesiones al cambiar contraseña
-- Información de IP y User-Agent por sesión
-- Logout que invalida todas las sesiones
+### Configuración de Producción
 
-#### ✅ **Headers de Seguridad**
-- `X-Content-Type-Options: nosniff`
-- `X-Frame-Options: DENY`
-- `X-XSS-Protection: 1; mode=block`
-- `Referrer-Policy: strict-origin-when-cross-origin`
-- `Strict-Transport-Security` (en producción)
+#### Variables de Entorno Críticas
 
-### 3. **Configuración Segura**
+```env
+# OBLIGATORIO: Cambiar en producción
+SECRET_KEY=generar-con-openssl-rand-hex-32
+OPENAI_API_KEY=tu-api-key-secreta
 
-#### ✅ **Variables de Entorno**
-- API keys y secretos en variables de entorno
-- Configuración separada por ambiente
-- Validación de variables requeridas
+# Configuración de seguridad
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+REFRESH_TOKEN_EXPIRE_DAYS=7
+RATE_LIMIT_REQUESTS=100
+RATE_LIMIT_WINDOW=60
 
-#### ✅ **CORS Configurado**
-- Orígenes permitidos específicos
-- Credenciales habilitadas solo para dominios confiables
-
-#### ✅ **Logging de Seguridad**
-- Registro de todos los requests
-- Logging de eventos de autenticación
-- Timestamps y información de contexto
-
-## 🚨 Configuración de Producción
-
-### Variables de Entorno Críticas
-
-```bash
-# Generar clave secreta segura
-SECRET_KEY=$(openssl rand -hex 32)
-
-# Configurar base de datos segura
-DATABASE_URL=postgresql://user:password@localhost/callcenter
-
-# Configurar Redis para sesiones
-REDIS_URL=redis://localhost:6379
-
-# Configurar CORS restrictivo
-ALLOWED_ORIGINS=https://yourdomain.com
-
-# Configurar ambiente
-ENVIRONMENT=production
+# CORS - Solo dominios confiables
+ALLOWED_ORIGINS=https://tudominio.com,https://www.tudominio.com
 ```
 
-### Configuración de Base de Datos
+#### Generación de Secret Key Segura
 
-#### PostgreSQL (Recomendado para Producción)
 ```bash
-# Instalar PostgreSQL
-sudo apt-get install postgresql postgresql-contrib
+# Generar una clave secreta segura
+openssl rand -hex 32
 
-# Crear base de datos
-sudo -u postgres createdb callcenter
-sudo -u postgres createuser callcenter_user
-
-# Configurar permisos
-sudo -u postgres psql
-GRANT ALL PRIVILEGES ON DATABASE callcenter TO callcenter_user;
-ALTER USER callcenter_user PASSWORD 'secure_password';
+# O usando Python
+python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-### Configuración de HTTPS
+## 🚨 Configuración de Seguridad para Producción
 
-#### Con Nginx
+### 1. Cambiar Credenciales por Defecto
+
+**IMPORTANTE**: El sistema viene con un usuario administrador por defecto:
+
+- Usuario: `admin`
+- Contraseña: `Admin123!`
+- Email: `admin@callcenter.com`
+
+**OBLIGATORIO**: Cambiar estas credenciales inmediatamente después de la instalación.
+
+### 2. Configurar HTTPS
+
 ```nginx
+# Configuración Nginx con SSL
 server {
     listen 443 ssl http2;
-    server_name yourdomain.com;
+    server_name tudominio.com;
     
     ssl_certificate /path/to/certificate.crt;
     ssl_certificate_key /path/to/private.key;
     
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512;
-    ssl_prefer_server_ciphers off;
+    # Headers de seguridad
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options DENY always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-XSS-Protection "1; mode=block" always;
     
     location / {
-        proxy_pass http://127.0.0.1:5000;
+        proxy_pass http://localhost:5000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -125,120 +91,166 @@ server {
 }
 ```
 
-## 🛡️ Mejores Prácticas de Seguridad
+### 3. Configurar Firewall
 
-### Para Administradores
+```bash
+# UFW (Ubuntu/Debian)
+sudo ufw allow 22/tcp    # SSH
+sudo ufw allow 80/tcp    # HTTP (redirección a HTTPS)
+sudo ufw allow 443/tcp   # HTTPS
+sudo ufw enable
 
-1. **Cambiar Credenciales por Defecto**
-   ```bash
-   # Cambiar inmediatamente después de la instalación
-   Usuario: admin
-   Contraseña: Admin123! → [Nueva contraseña segura]
-   ```
+# iptables (CentOS/RHEL)
+sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+sudo iptables -A INPUT -j DROP
+```
 
-2. **Gestión de Usuarios**
-   - Crear usuarios específicos para cada persona
-   - Asignar roles mínimos necesarios
-   - Revisar y desactivar usuarios inactivos
+### 4. Configurar Base de Datos Segura
 
-3. **Monitoreo de Seguridad**
-   - Revisar logs de autenticación regularmente
-   - Monitorear sesiones activas
-   - Configurar alertas para actividad sospechosa
+```env
+# PostgreSQL con SSL
+DATABASE_URL=postgresql://user:pass@localhost/callcenter?sslmode=require
 
-### Para Desarrolladores
+# Usar usuario dedicado (no root)
+# Crear usuario específico para la aplicación
+CREATE USER callcenter_user WITH PASSWORD 'password_segura';
+GRANT CONNECT ON DATABASE callcenter TO callcenter_user;
+GRANT USAGE ON SCHEMA public TO callcenter_user;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO callcenter_user;
+```
 
-1. **Manejo de Secretos**
-   ```python
-   # ❌ NUNCA hacer esto
-   SECRET_KEY = "mi-clave-secreta"
-   
-   # ✅ Usar variables de entorno
-   SECRET_KEY = os.getenv("SECRET_KEY")
-   ```
+### 5. Configurar Redis Seguro
 
-2. **Validación de Entrada**
-   ```python
-   # ✅ Validar todos los inputs
-   from pydantic import BaseModel, validator
-   
-   class UserInput(BaseModel):
-       username: str
-       
-       @validator('username')
-       def validate_username(cls, v):
-           if len(v) < 3:
-               raise ValueError('Username too short')
-           return v
-   ```
+```env
+# Redis con autenticación
+REDIS_URL=redis://:password@localhost:6379
 
-3. **Manejo de Errores**
-   ```python
-   # ❌ No exponer información sensible
-   except Exception as e:
-       return {"error": str(e)}  # Puede exponer información
-   
-   # ✅ Mensajes de error genéricos
-   except Exception as e:
-       logger.error(f"Error: {e}")
-       return {"error": "Internal server error"}
-   ```
+# Configuración redis.conf
+requirepass tu_password_seguro
+bind 127.0.0.1
+protected-mode yes
+```
 
 ## 🔍 Auditoría de Seguridad
 
-### Checklist de Seguridad
+### Verificaciones Periódicas
 
-- [ ] Credenciales por defecto cambiadas
-- [ ] Variables de entorno configuradas
-- [ ] HTTPS habilitado en producción
-- [ ] Base de datos con autenticación
-- [ ] Logs de seguridad configurados
-- [ ] Backups automáticos configurados
-- [ ] Firewall configurado
-- [ ] Actualizaciones de seguridad aplicadas
+1. **Revisar logs de acceso**:
+   ```bash
+   tail -f /var/log/nginx/access.log
+   tail -f /var/log/nginx/error.log
+   ```
 
-### Herramientas de Auditoría
+2. **Verificar intentos de login fallidos**:
+   ```sql
+   SELECT * FROM auth_logs WHERE success = false ORDER BY timestamp DESC;
+   ```
+
+3. **Revisar tokens expirados**:
+   ```sql
+   SELECT COUNT(*) FROM refresh_tokens WHERE expires_at < NOW();
+   ```
+
+4. **Monitorear uso de API**:
+   ```bash
+   # Verificar uso de OpenAI API
+   curl -H "Authorization: Bearer $OPENAI_API_KEY" \
+        https://api.openai.com/v1/usage
+   ```
+
+### Escaneo de Vulnerabilidades
 
 ```bash
-# Escanear dependencias vulnerables
-pip install safety
+# Instalar herramientas de seguridad
+pip install safety bandit
+
+# Verificar dependencias
 safety check
 
-# Análisis de código estático
-pip install bandit
-bandit -r .
-
-# Verificar configuración SSL
-nmap --script ssl-enum-ciphers -p 443 yourdomain.com
+# Análisis estático de código
+bandit -r . -f json -o bandit-report.json
 ```
 
 ## 🚨 Respuesta a Incidentes
 
-### En caso de Compromiso de Seguridad
+### Detección de Intrusión
 
-1. **Acción Inmediata**
-   - Cambiar todas las contraseñas
-   - Invalidar todas las sesiones activas
-   - Revisar logs de acceso
+1. **Bloquear IP sospechosa**:
+   ```bash
+   sudo ufw deny from IP_SOSPECHOSA
+   ```
 
-2. **Investigación**
-   - Identificar el vector de ataque
-   - Determinar el alcance del compromiso
-   - Documentar el incidente
+2. **Revisar logs de autenticación**:
+   ```sql
+   SELECT * FROM auth_logs 
+   WHERE ip_address = 'IP_SOSPECHOSA' 
+   ORDER BY timestamp DESC;
+   ```
 
-3. **Recuperación**
-   - Aplicar parches de seguridad
-   - Restaurar desde backup si es necesario
-   - Implementar medidas adicionales
+3. **Invalidar sesiones**:
+   ```sql
+   DELETE FROM refresh_tokens WHERE user_id = USER_ID_SOSPECHOSO;
+   ```
+
+### Recuperación
+
+1. **Cambiar todas las contraseñas**
+2. **Regenerar secret keys**
+3. **Revisar integridad de la base de datos**
+4. **Actualizar certificados SSL**
+5. **Notificar a usuarios afectados**
+
+## 📋 Checklist de Seguridad
+
+### Instalación Inicial
+- [ ] Cambiar credenciales por defecto
+- [ ] Configurar HTTPS
+- [ ] Generar secret key segura
+- [ ] Configurar firewall
+- [ ] Configurar base de datos segura
+- [ ] Configurar Redis con autenticación
+
+### Mantenimiento Periódico
+- [ ] Actualizar dependencias mensualmente
+- [ ] Revisar logs de seguridad semanalmente
+- [ ] Rotar secret keys trimestralmente
+- [ ] Actualizar certificados SSL
+- [ ] Revisar permisos de usuarios
+- [ ] Hacer backup de configuración
+
+### Monitoreo Continuo
+- [ ] Configurar alertas de login fallidos
+- [ ] Monitorear uso de API
+- [ ] Revisar métricas de rendimiento
+- [ ] Verificar integridad de archivos
+- [ ] Monitorear espacio en disco
 
 ## 📞 Contacto de Seguridad
 
-Para reportar vulnerabilidades de seguridad:
-- Email: security@callcenter.com
-- Respuesta esperada: 24-48 horas
-- Divulgación responsable apreciada
+Si descubres una vulnerabilidad de seguridad:
+
+1. **NO** la reportes públicamente
+2. Envía un email a: security@callcenter.com
+3. Incluye detalles técnicos del problema
+4. Espera confirmación antes de publicar
+
+### Información a Incluir
+
+- Descripción detallada de la vulnerabilidad
+- Pasos para reproducir el problema
+- Impacto potencial
+- Sugerencias de mitigación
+- Tu información de contacto
+
+## 📚 Recursos Adicionales
+
+- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
+- [FastAPI Security](https://fastapi.tiangolo.com/tutorial/security/)
+- [Python Security Best Practices](https://python-security.readthedocs.io/)
+- [NIST Cybersecurity Framework](https://www.nist.gov/cyberframework)
 
 ---
 
-**Última actualización**: Diciembre 2024  
-**Versión del documento**: 1.0 
+**Recuerda**: La seguridad es responsabilidad de todos. Mantén tu sistema actualizado y monitoreado constantemente. 

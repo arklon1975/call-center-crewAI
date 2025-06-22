@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resumen de Conversación - Call Center</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .email-container {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #007bff;
+            margin: 0;
+            font-size: 24px;
+        }
+        .customer-info {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+        .customer-info h3 {
+            color: #495057;
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .info-item {
+            margin-bottom: 10px;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #495057;
+        }
+        .conversation-summary {
+            background-color: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+        .conversation-summary h3 {
+            color: #1976d2;
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .summary-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #ffffff;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .summary-title {
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 5px;
+        }
+        .summary-content {
+            color: #555;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .contact-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .contact-info a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .contact-info a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .email-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>📞 Resumen de tu Conversación</h1>
+            <p>Call Center System</p>
+        </div>
+
+        <div class="customer-info">
+            <h3>👤 Información del Cliente</h3>
+            <div class="info-item">
+                <span class="info-label">Nombre:</span> {{ customer_name }}
+            </div>
+            <div class="info-item">
+                <span class="info-label">ID de Llamada:</span> {{ call_id }}
+            </div>
+            <div class="info-item">
+                <span class="info-label">Agente:</span> {{ agent_name }}
+            </div>
+            <div class="info-item">
+                <span class="info-label">Fecha y Hora:</span> {{ conversation_date }}
+            </div>
+        </div>
+
+        <div class="conversation-summary">
+            <h3>💬 Resumen de la Conversación</h3>
+            
+            {% if chat_summary.topic %}
+            <div class="summary-item">
+                <div class="summary-title">Tema Principal:</div>
+                <div class="summary-content">{{ chat_summary.topic }}</div>
+            </div>
+            {% endif %}
+
+            {% if chat_summary.issues %}
+            <div class="summary-item">
+                <div class="summary-title">Problemas Identificados:</div>
+                <div class="summary-content">
+                    <ul>
+                    {% for issue in chat_summary.issues %}
+                        <li>{{ issue }}</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if chat_summary.solutions %}
+            <div class="summary-item">
+                <div class="summary-title">Soluciones Proporcionadas:</div>
+                <div class="summary-content">
+                    <ul>
+                    {% for solution in chat_summary.solutions %}
+                        <li>{{ solution }}</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if chat_summary.next_steps %}
+            <div class="summary-item">
+                <div class="summary-title">Próximos Pasos:</div>
+                <div class="summary-content">
+                    <ul>
+                    {% for step in chat_summary.next_steps %}
+                        <li>{{ step }}</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if chat_summary.notes %}
+            <div class="summary-item">
+                <div class="summary-title">Notas Adicionales:</div>
+                <div class="summary-content">{{ chat_summary.notes }}</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="contact-info">
+            <h4>📧 ¿Necesitas más ayuda?</h4>
+            <p>Si tienes alguna pregunta adicional o necesitas más información, no dudes en contactarnos:</p>
+            <p>📧 Email: <a href="mailto:{{ support_email }}">{{ support_email }}</a></p>
+            <p>📞 Teléfono: +1 (555) 123-4567</p>
+        </div>
+
+        <div class="footer">
+            <p>Este es un email automático generado por el sistema de Call Center.</p>
+            <p>© {{ company_name }} - Todos los derechos reservados</p>
+        </div>
+    </div>
+</body>
+</html> 
