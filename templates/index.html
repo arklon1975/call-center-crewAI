@@ -18,6 +18,20 @@
             <div class="navbar-nav ms-auto">
                 <a class="nav-link" href="/">Home</a>
                 <a class="nav-link" href="/dashboard">Dashboard</a>
+                {% if user %}
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-user me-1"></i>{{ user.full_name or user.username }}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#" onclick="changePassword()"><i class="fas fa-key me-2"></i>Cambiar Contraseña</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a></li>
+                    </ul>
+                </div>
+                {% else %}
+                <a class="nav-link" href="/login">Login</a>
+                {% endif %}
             </div>
         </div>
     </nav>
@@ -450,6 +464,145 @@
                     alertDiv.remove();
                 }
             }, 5000);
+        }
+
+        // Logout function
+        async function logout() {
+            if (!confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert('Sesión cerrada exitosamente', 'success');
+                    // Redirect to login page after a short delay
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 1000);
+                } else {
+                    showAlert('Error al cerrar sesión: ' + (data.detail || 'Error desconocido'), 'danger');
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+                showAlert('Error al cerrar sesión. Redirigiendo...', 'warning');
+                // Redirect anyway in case of network error
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+            }
+        }
+
+        // Change password function
+        function changePassword() {
+            // Create modal for password change
+            const modalHtml = `
+                <div class="modal fade" id="changePasswordModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Cambiar Contraseña</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="changePasswordForm">
+                                    <div class="mb-3">
+                                        <label for="currentPassword" class="form-label">Contraseña Actual</label>
+                                        <input type="password" class="form-control" id="currentPassword" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="newPassword" class="form-label">Nueva Contraseña</label>
+                                        <input type="password" class="form-control" id="newPassword" required>
+                                        <div class="form-text">Mínimo 8 caracteres, debe incluir mayúsculas, minúsculas, números y símbolos.</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="confirmPassword" class="form-label">Confirmar Nueva Contraseña</label>
+                                        <input type="password" class="form-control" id="confirmPassword" required>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="button" class="btn btn-primary" onclick="submitPasswordChange()">Cambiar Contraseña</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remove existing modal if any
+            const existingModal = document.getElementById('changePasswordModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Add modal to body
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('changePasswordModal'));
+            modal.show();
+        }
+
+        // Submit password change
+        async function submitPasswordChange() {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                showAlert('Todos los campos son requeridos', 'warning');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showAlert('Las nuevas contraseñas no coinciden', 'warning');
+                return;
+            }
+
+            if (newPassword.length < 8) {
+                showAlert('La nueva contraseña debe tener al menos 8 caracteres', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        current_password: currentPassword,
+                        new_password: newPassword
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert('Contraseña cambiada exitosamente', 'success');
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('changePasswordModal'));
+                    modal.hide();
+                    // Clear form
+                    document.getElementById('changePasswordForm').reset();
+                } else {
+                    showAlert('Error al cambiar contraseña: ' + (data.detail || 'Error desconocido'), 'danger');
+                }
+            } catch (error) {
+                console.error('Password change error:', error);
+                showAlert('Error al cambiar contraseña', 'danger');
+            }
         }
     </script>
 </body>

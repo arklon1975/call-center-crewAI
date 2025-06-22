@@ -30,9 +30,10 @@ Multi-Agent Call Center System built with CrewAI and FastAPI. Features specializ
 - Performance analytics and reporting
 
 ## Recent Changes
-- **2025-06-22:** Fixed port conflict and startup issues
-- **2025-06-22:** Verified authentication system working correctly
-- **2025-06-22:** Confirmed default admin credentials functional
+- **2025-06-22:** Implemented complete logout functionality with user dropdown menu
+- **2025-06-22:** Added password change functionality in user interface
+- **2025-06-22:** Fixed missing fastapi-mail dependency and router initialization
+- **2025-06-22:** Enhanced navbar with user menu and session management
 
 ## User Preferences
 - Language: Spanish/English bilingual support
