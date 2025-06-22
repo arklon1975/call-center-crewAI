@@ -13,11 +13,11 @@ from agents.call_routing_agent import CallRoutingAgent
 from auth.dependencies import require_auth, require_supervisor, require_admin
 from auth.models import User
 
+router = APIRouter()
+
 # Include email routes
 from api.email_routes import router as email_router
 router.include_router(email_router)
-
-router = APIRouter()
 
 # Pydantic models for request/response
 class InitiateCallRequest(BaseModel):
